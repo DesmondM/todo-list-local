@@ -3,9 +3,17 @@ import Alert from './Alert';
 import './App.css';
 import List from './List';
 
+const getLocalStorage = ()=>{
+  let list = localStorage.getItem('list');
+  if(list){
+    return JSON.parse(localStorage.getItem('list'))
+  } else{
+    return[]
+  }
+}
 function App() {
   const [name, setName] = useState('');
-  const [list, setList] = useState([]);
+  const [list, setList] = useState(getLocalStorage());
   const [isEditing, setIsEditing] = useState(false)
   const [editID, setEditID]= useState(null)
   const [alert, setAlert]= useState({show: false, 
@@ -18,7 +26,18 @@ function App() {
         showAlert(true, 'Enter todo item', 'danger');
     }
     else if(name&& isEditing){
-        //deal with edit
+        setList(
+          list.map((item)=>{
+            if(item.id===editID){
+              return {...item, title: name}
+            }
+            return item
+          })
+        )
+        setName('');
+        setEditID(null);
+        setIsEditing(false);
+        showAlert(true, 'Item edited', 'success')
     }
     else{
         showAlert(true, 'Item added', 'success')
@@ -41,11 +60,23 @@ function App() {
   showAlert(true, 'Remove one Item', 'danger');
   setList(list.filter((item)=>item.id!==id))
   }
+
+  const editItem = (id)=>{
+    const specificItem = list.find((item)=>item.id===id);
+    setIsEditing(true);
+    setEditID(id);
+    setName(specificItem.title)
+  }
+
+  useEffect(()=>{
+    localStorage.setItem('list', JSON.stringify(list))
+  }, [list])
+
   return (
     <section className="section-center">
      <form className="grocery-form" onSubmit = {handleForm}>
       {
-        alert.show && <p><Alert {...alert} removeAlert = {showAlert}/></p>
+        alert.show && <p><Alert {...alert} removeAlert = {showAlert} list = {list}/></p>
       }
       <h3>Todo List</h3>
       <div className="form-control">
@@ -55,12 +86,12 @@ function App() {
               value= {name}
               onChange = {(e)=>setName(e.target.value)}
               />
-          <button type="submit" className="submit-btn">{isEditing? 'Edit':'Submit'}</button>
+          <button type="submit" className="submit-btn" >{isEditing? 'Edit':'Submit'}</button>
      </div>
      </form>
      {
        list.length>0 &&
-       (<div className="grocery-container"><List items = {list} removeItem = {removeItem}/>
+       (<div className="grocery-container"><List items = {list} removeItem = {removeItem} editItem={editItem}/>
        <button className="clear-btn" type="submit" onClick={handleClearList}>Clear Items</button>
      
      </div>)
